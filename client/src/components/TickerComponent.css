@@ -1,0 +1,30 @@
+.custom-table th, .custom-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.custom-table th {
+  background-color: #f2f2f2;
+}
+
+.custom-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.custom-table tr:hover {
+  background-color: #ddd;
+}
+
+.custom-table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: hsl(219, 70%, 96%);
+  color: white;
+}
+.custom-table {
+  font-family: Arial, sans-serif;
+  width: 80% !important;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+}
