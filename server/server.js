@@ -51,6 +51,8 @@ function trackTickers(socket) {
     getQuotes(socket);
   }, FETCH_INTERVAL);
 
+  
+
   socket.on('disconnect', function() {
     clearInterval(timer);
   });
