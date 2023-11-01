@@ -1,6 +1,6 @@
 export function getChangeClass(data, value, name) {
   const el = data.find((item) => item.ticker === name);
-  console.log(el);
+
   let classes = "";
   if (el.change === "minus") {
     classes = "has-text-success";

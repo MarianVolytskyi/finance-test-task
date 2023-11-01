@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import "./TickerComponent.css";
 import { compareData, getChangeClass } from "../utils/compareFunc";
+import axios from "axios";
 
 const socket = io("http://localhost:4000");
 
@@ -10,6 +11,7 @@ const TickerComponent = () => {
   const prevTickerData = useRef(null);
   const [favorites, setFavorits] = useState([]);
   const [untrackedTickers, setUntrackedTickers] = useState([]);
+  const [newInterval, setNewInterval] = useState(2000);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -18,7 +20,7 @@ const TickerComponent = () => {
     });
 
     socket.on("ticker", (data) => {
-      setTickerData(data); 
+      setTickerData(data);
     });
 
     socket.on("disconnect", () => {
@@ -52,9 +54,35 @@ const TickerComponent = () => {
     setUntrackedTickers(untrackedTickers.filter((ticker) => ticker !== value));
   };
 
+  const handleChangeInterval = () => {
+    axios
+      .post("http://localhost:4000/change-interval", { newInterval })
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
   return (
     <div className="container ">
       <h2 className="title mt-5">Table Page</h2>
+      <div className="mb-5">
+      <div className="select is-link">
+        <select
+          value={newInterval}
+          onChange={(e) => setNewInterval(e.target.value)}
+        >
+          <option value="2000">2 сек</option>
+          <option value="5000">5 сек</option>
+          <option value="10000">10 сек</option>
+          <option value="20000">20 сек</option>
+        </select>
+      </div>
+      <button className="button is-success ml-3" onClick={handleChangeInterval}>
+        Змінити інтервал
+      </button>
+      </div>
       <table className="table is-bordered is-striped is-narrow is-hoverable is-fullwidth custom-table ">
         <thead>
           <tr>
@@ -97,7 +125,9 @@ const TickerComponent = () => {
                 !untrackedTickers.includes(item.ticker) ? (
                   getChangeClass(deff, item.price, item.ticker)
                 ) : (
-                  <td>Untracked</td>
+                  <td className="has-text-centered has-text-weight-bold">
+                    Untracked
+                  </td>
                 )}
                 {!untrackedTickers.includes(item.ticker) ? (
                   <>
@@ -115,12 +145,18 @@ const TickerComponent = () => {
                   </>
                 )}
                 <td>
-                  <button
-                    className="button is-success"
-                    onClick={() => addToFavorites(item.ticker)}
-                  >
-                    Add
-                  </button>
+                  {!favorites.includes(item.ticker) ? (
+                    <button
+                      className="button is-success"
+                      onClick={() => addToFavorites(item.ticker)}
+                    >
+                      Add
+                    </button>
+                  ) : (
+                    <button disabled className="button is-success">
+                      Add
+                    </button>
+                  )}
                 </td>
                 {!untrackedTickers.includes(item.ticker) ? (
                   <td>
@@ -207,6 +243,8 @@ const TickerComponent = () => {
           </table>
         </div>
       )}
+
+     
     </div>
   );
 };

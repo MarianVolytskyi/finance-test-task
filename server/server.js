@@ -1,20 +1,29 @@
-'use strict';
-const express = require('express');
-const http = require('http');
-const io = require('socket.io');
-const cors = require('cors');
+"use strict";
+const express = require("express");
+const http = require("http");
+const io = require("socket.io");
+const cors = require("cors");
 
 const FETCH_INTERVAL = 5000;
 const PORT = process.env.PORT || 4000;
+let currentFetchInterval = FETCH_INTERVAL;
+let timer;
+let getQuotes;
 
 const tickers = [
-  'AAPL', // Apple
-  'GOOGL', // Alphabet
-  'MSFT', // Microsoft
-  'AMZN', // Amazon
-  'FB', // Facebook
-  'TSLA', // Tesla
+  "AAPL", // Apple
+  "GOOGL", // Alphabet
+  "MSFT", // Microsoft
+  "AMZN", // Amazon
+  "FB", // Facebook
+  "TSLA", // Tesla
+  "NVDA", // NVIDIA Corporation
+  "V", // Visa Inc.
+  "JPM", // JPMorgan Chase & Co.
+  "MA", // Mastercard Incorporated
+  "PYPL", // PayPal Holdings, Inc.
 ];
+
 
 function randomValue(min = 0, max = 1, precision = 0) {
   const random = Math.random() * (max - min) + min;
@@ -23,57 +32,70 @@ function randomValue(min = 0, max = 1, precision = 0) {
 
 function utcDate() {
   const now = new Date();
-  return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+  return new Date(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds()
+  );
 }
 
-function getQuotes(socket) {
+const trackTickers = (socket) => {
+  getQuotes = () => {
+    const quotes = tickers.map((ticker) => ({
+      ticker,
+      exchange: "NASDAQ",
+      price: randomValue(100, 300, 2),
+      change: randomValue(0, 200, 2),
+      change_percent: randomValue(0, 1, 2),
+      dividend: randomValue(0, 1, 2),
+      yield: randomValue(0, 2, 2),
+      last_trade_time: utcDate(),
+    }));
+    socket.emit("ticker", quotes);
+  };
 
-  const quotes = tickers.map(ticker => ({
-    ticker,
-    exchange: 'NASDAQ',
-    price: randomValue(100, 300, 2),
-    change: randomValue(0, 200, 2),
-    change_percent: randomValue(0, 1, 2),
-    dividend: randomValue(0, 1, 2),
-    yield: randomValue(0, 2, 2),
-    last_trade_time: utcDate(),
-  }));
+  timer = setInterval(getQuotes, currentFetchInterval);
 
-  socket.emit('ticker', quotes);
-}
-
-function trackTickers(socket) {
-  // run the first time immediately
-  getQuotes(socket);
-
-  // every N seconds
-  const timer = setInterval(function() {
-    getQuotes(socket);
-  }, FETCH_INTERVAL);
-
-  
-
-  socket.on('disconnect', function() {
+  socket.on("disconnect", function () {
     clearInterval(timer);
   });
-}
+};
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 const server = http.createServer(app);
 
 const socketServer = io(server, {
   cors: {
     origin: "*",
+  },
+});
+
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/index.html");
+});
+
+app.post("/change-interval", (req, res) => {
+  let { newInterval } = req.body;
+  newInterval = parseInt(newInterval);
+  if (!isNaN(newInterval)) {
+    currentFetchInterval = newInterval;
+
+    clearInterval(timer);
+    timer = setInterval(getQuotes, currentFetchInterval);
+
+    res.status(200).send("Interval changed successfully");
+  } else {
+    res.status(400).send("Invalid interval value");
   }
 });
 
-app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/index.html');
-});
-
-socketServer.on('connection', (socket) => {
-  socket.on('start', () => {
+socketServer.on("connection", (socket) => {
+  socket.on("start", () => {
     trackTickers(socket);
   });
 });
