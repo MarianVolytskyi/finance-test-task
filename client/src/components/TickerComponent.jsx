@@ -3,6 +3,8 @@ import io from "socket.io-client";
 import "./TickerComponent.css";
 import { compareData, getChangeClass } from "../utils/compareFunc";
 import axios from "axios";
+import FavoritesComponent from "./FavoriteComponent";
+import LoaderComponent from "./Loader";
 
 const socket = io("http://localhost:4000");
 
@@ -68,183 +70,141 @@ const TickerComponent = () => {
     <div className="container ">
       <h2 className="title mt-5">Table Page</h2>
       <div className="mb-5">
-      <div className="select is-link">
-        <select
-          value={newInterval}
-          onChange={(e) => setNewInterval(e.target.value)}
+        <div className="select is-link">
+          <select
+            value={newInterval}
+            onChange={(e) => setNewInterval(e.target.value)}
+          >
+            <option value="2000">2 sec</option>
+            <option value="5000">5 sec</option>
+            <option value="10000">10 sec</option>
+            <option value="20000">20 sec</option>
+          </select>
+        </div>
+        <button
+          className="button is-success ml-3"
+          onClick={handleChangeInterval}
         >
-          <option value="2000">2 сек</option>
-          <option value="5000">5 сек</option>
-          <option value="10000">10 сек</option>
-          <option value="20000">20 сек</option>
-        </select>
+          Change interval
+        </button>
       </div>
-      <button className="button is-success ml-3" onClick={handleChangeInterval}>
-        Змінити інтервал
-      </button>
-      </div>
-      <table className="table is-bordered is-striped is-narrow is-hoverable is-fullwidth custom-table ">
-        <thead>
-          <tr>
-            <th className="is-1">
-              <abbr title="ID">ID</abbr>
-            </th>
-            <th className="is-5">
-              <abbr title="Ticker">Ticker</abbr>
-            </th>
-            <th className="is-2">
-              <abbr title="Price">Price</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Change">Change</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Change Percent">Change Percent</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Dividend">Dividend</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Yield">Yield</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Remove">Favorites</abbr>
-            </th>
-            <th className="is-1">
-              <abbr title="Remove">Tracking</abbr>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickerData &&
-            tickerData.map((item, index) => (
-              <tr key={item.ticker}>
-                <td>{index + 1}</td>
-                <td className="has-text-weight-bold">{item.ticker}</td>
-                {prevTickerData.current &&
-                !untrackedTickers.includes(item.ticker) ? (
-                  getChangeClass(deff, item.price, item.ticker)
-                ) : (
-                  <td className="has-text-centered has-text-weight-bold">
-                    Untracked
-                  </td>
-                )}
-                {!untrackedTickers.includes(item.ticker) ? (
-                  <>
-                    <td>{item.change}</td>
-                    <td>{item.change_percent}</td>
-                    <td>{item.dividend}</td>
-                    <td>{item.yield}</td>
-                  </>
-                ) : (
-                  <>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </>
-                )}
-                <td>
-                  {!favorites.includes(item.ticker) ? (
-                    <button
-                      className="button is-success"
-                      onClick={() => addToFavorites(item.ticker)}
-                    >
-                      Add
-                    </button>
+      {prevTickerData.current ? (
+        <table className="table is-bordered is-striped is-narrow is-hoverable is-fullwidth custom-table ">
+          <thead>
+            <tr>
+              <th className="is-1">
+                <abbr title="ID">ID</abbr>
+              </th>
+              <th className="is-5">
+                <abbr title="Ticker">Ticker</abbr>
+              </th>
+              <th className="is-2">
+                <abbr title="Price">Price</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Change">Change</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Change Percent">Change Percent</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Dividend">Dividend</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Yield">Yield</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Remove">Favorites</abbr>
+              </th>
+              <th className="is-1">
+                <abbr title="Remove">Tracking</abbr>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {tickerData &&
+              tickerData.map((item, index) => (
+                <tr key={item.ticker}>
+                  <td>{index + 1}</td>
+                  <td className="has-text-weight-bold">{item.ticker}</td>
+
+                  {prevTickerData.current &&
+                  !untrackedTickers.includes(item.ticker) ? (
+                    getChangeClass(deff, item.price, item.ticker)
                   ) : (
-                    <button disabled className="button is-success">
-                      Add
-                    </button>
+                    <td className="has-text-centered has-text-weight-bold">
+                      Untracked
+                    </td>
                   )}
-                </td>
-                {!untrackedTickers.includes(item.ticker) ? (
+                  {!untrackedTickers.includes(item.ticker) ? (
+                    <>
+                      <td>{item.change}</td>
+                      <td>{item.change_percent}</td>
+                      <td>{item.dividend}</td>
+                      <td>{item.yield}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td></td>
+                      <td>
+                        <div className="loader-td"></div>
+                      </td>
+                      <td></td>
+                      <td></td>
+                    </>
+                  )}
                   <td>
-                    <button
-                      className="button is-info"
-                      onClick={() => untrackTicker(item.ticker)}
-                    >
-                      {"\u{20E0}"}
-                    </button>
-                  </td>
-                ) : (
-                  <td>
-                    <button
-                      className="button is-info"
-                      onClick={() => trackTicker(item.ticker)}
-                    >
-                      {"\u{1F441}"}
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
-        </tbody>
-      </table>
-      {favorites.length > 0 && (
-        <div>
-          <h2 className="title mt-5">Favorites</h2>
-          <table className="table is-bordered is-striped is-narrow is-hoverable is-fullwidth custom-table">
-            <thead>
-              <tr>
-                <th className="is-1">
-                  <abbr title="ID">ID</abbr>
-                </th>
-                <th className="is-5">
-                  <abbr title="Ticker">Ticker</abbr>
-                </th>
-                <th className="is-2">
-                  <abbr title="Price">Price</abbr>
-                </th>
-                <th className="is-1">
-                  <abbr title="Change">Change</abbr>
-                </th>
-                <th className="is-1">
-                  <abbr title="Change Percent">Change Percent</abbr>
-                </th>
-                <th className="is-1">
-                  <abbr title="Dividend">Dividend</abbr>
-                </th>
-                <th className="is-1">
-                  <abbr title="Yield">Yield</abbr>
-                </th>
-                <th className="is-1">
-                  <abbr title="Remove">Favorites</abbr>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickerData
-                .filter((item) => favorites.includes(item.ticker))
-                .map((item, index) => (
-                  <tr key={item.ticker}>
-                    <td>{index + 1}</td>
-                    <td className="has-text-weight-bold">{item.ticker}</td>
-                    {prevTickerData.current ? (
-                      getChangeClass(deff, item.price, item.ticker)
+                    {!favorites.includes(item.ticker) ? (
+                      <button
+                        className="button is-success"
+                        onClick={() => addToFavorites(item.ticker)}
+                      >
+                        Add
+                      </button>
                     ) : (
-                      <td>{item.price}</td>
+                      <button disabled className="button is-success">
+                        Add
+                      </button>
                     )}
-                    <td>{item.change}</td>
-                    <td>{item.change_percent}</td>
-                    <td>{item.dividend}</td>
-                    <td>{item.yield}</td>
+                  </td>
+                  {!untrackedTickers.includes(item.ticker) ? (
                     <td>
                       <button
-                        className="button is-danger"
-                        onClick={() => removeFromFavorites(item.ticker)}
+                        className="button is-info"
+                        onClick={() => untrackTicker(item.ticker)}
                       >
-                        Remove
+                        {"\u{20E0}"}
                       </button>
                     </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+                  ) : (
+                    <td>
+                      <button
+                        className="button is-info"
+                        onClick={() => trackTicker(item.ticker)}
+                      >
+                        {"\u{1F441}"}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="container">
+          <LoaderComponent />
         </div>
       )}
 
-     
+      {favorites.length > 0 && (
+        <FavoritesComponent
+          favorites={favorites}
+          tickerData={tickerData}
+          prevTickerData={prevTickerData}
+          deff={deff}
+          removeFromFavorites={removeFromFavorites}
+        />
+      )}
     </div>
   );
 };
